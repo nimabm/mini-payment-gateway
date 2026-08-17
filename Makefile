@@ -55,4 +55,8 @@ reset: ## Stop and delete the database. Destroys every payment.
 	@cp .env.example .env
 	@KEY=$$(openssl rand -base64 32); \
 		sed -i.bak "s|^APP_KEY=.*|APP_KEY=$$KEY|" .env && rm -f .env.bak
+	@sed -i.bak "s|^APP_ENV=.*|APP_ENV=local|" .env && rm -f .env.bak
+	@sed -i.bak "s|^APP_URL=.*|APP_URL=http://localhost:$${HTTP_PORT:-8080}|" .env && rm -f .env.bak
 	@echo "Created .env with a fresh APP_KEY. Back that key up."
+	@echo "It starts in APP_ENV=local. On a server, set APP_ENV=production and a"
+	@echo "real APP_URL — production refuses to start with either one wrong."

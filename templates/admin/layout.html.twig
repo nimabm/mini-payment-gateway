@@ -64,7 +64,7 @@
         {% endif %}
 
         {% if flash is defined and flash %}
-            <div class="banner banner-{{ flash.tone }}">{{ t(flash.message) }}</div>
+            <div class="banner banner-{{ flash.tone }}">{{ t(flash.message, flash.replacements|default({})) }}</div>
         {% endif %}
 
         {% block content %}{% endblock %}

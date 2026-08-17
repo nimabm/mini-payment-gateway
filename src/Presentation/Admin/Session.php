@@ -47,9 +47,18 @@ final class Session
         return $value;
     }
 
-    public function flash(string $message, string $tone = 'success'): void
+    /**
+     * @param array<string, string|int|float> $replacements Filled into the
+     *        translated line, so a flash can carry a number without the message
+     *        having to be assembled before it is translated.
+     */
+    public function flash(string $message, string $tone = 'success', array $replacements = []): void
     {
-        $this->set('flash', ['message' => $message, 'tone' => $tone]);
+        $this->set('flash', [
+            'message' => $message,
+            'tone' => $tone,
+            'replacements' => $replacements,
+        ]);
     }
 
     /**

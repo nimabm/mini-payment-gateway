@@ -233,4 +233,17 @@ return [
     'common.created_at' => 'ایجاد',
     'common.status' => 'وضعیت',
     'common.never' => 'هرگز',
+    // Password
+    'password.title' => 'تغییر رمز عبور',
+    'password.hint' => 'حداقل :min نویسه. رمز بلند بهتر از رمز پیچیده است.',
+    'password.current' => 'رمز عبور فعلی',
+    'password.new' => 'رمز عبور جدید',
+    'password.confirm' => 'تکرار رمز عبور جدید',
+    'password.submit' => 'تغییر رمز عبور',
+    'password.changed' => 'رمز عبور شما تغییر کرد.',
+    'password.wrong_current' => 'رمز عبور فعلی درست نیست.',
+    'password.mismatch' => 'دو رمز عبور جدید یکسان نیستند.',
+    'password.too_short' => 'رمز عبور باید حداقل :min نویسه باشد.',
+    'password.throttled' => 'تلاش بیش از حد. یک دقیقه صبر کنید.',
+    'dashboard.url_mismatch' => 'مقدار APP_URL روی :configured تنظیم شده، ولی شما این صفحه را از آن آدرس نمی‌بینید. همین آدرس به بانک‌ها داده می‌شود تا کاربر را برگردانند؛ یعنی پول کم می‌شود و هیچ پرداختی تأیید نمی‌شود. APP_URL را در .env درست کنید و سرویس را ری‌استارت کنید.',
 ];

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App;
 
+use App\Infrastructure\Config\ConfigurationGuard;
+use App\Infrastructure\Config\MisconfiguredApplication;
 use App\Presentation\Api\ApiErrorMiddleware;
 use App\Presentation\Routes;
 use DI\ContainerBuilder;
@@ -23,6 +25,14 @@ final class Bootstrap
     public static function container(): ContainerInterface
     {
         self::loadEnvironment();
+
+        // Before anything is wired: a production installation pointed at
+        // localhost, or without an encryption key, must not appear to work.
+        $problems = ConfigurationGuard::problems($_ENV);
+
+        if ($problems !== []) {
+            throw new MisconfiguredApplication($problems);
+        }
 
         $builder = new ContainerBuilder();
         $builder->addDefinitions(dirname(__DIR__) . '/config/container.php');

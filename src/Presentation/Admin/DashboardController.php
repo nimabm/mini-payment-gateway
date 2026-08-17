@@ -6,6 +6,7 @@ namespace App\Presentation\Admin;
 
 use App\Application\Reporting\ReportingRepository;
 use App\Application\Reporting\TransactionFilter;
+use App\Application\Shared\UrlBuilder;
 use App\Domain\Payment\PaymentStatus;
 use App\Presentation\Support\TemplateRenderer;
 use DateTimeImmutable;
@@ -24,6 +25,7 @@ final readonly class DashboardController
     public function __construct(
         private ReportingRepository $reporting,
         private TemplateRenderer $renderer,
+        private UrlBuilder $urls,
     ) {
     }
 
@@ -52,6 +54,27 @@ final readonly class DashboardController
                 from: $now->modify('-7 days'),
                 perPage: 5,
             )),
+            'urlMismatch' => $this->urlMismatch($request),
         ]);
+    }
+
+    /**
+     * The one misconfiguration the startup guard cannot catch: a server left on
+     * `APP_ENV=local`, where the strict checks do not run.
+     *
+     * Reaching the panel on a host that is not the one in APP_URL is proof on
+     * its own — no guessing about environments. Payments would be sent to banks
+     * carrying a return address that leads nowhere.
+     */
+    private function urlMismatch(ServerRequestInterface $request): ?string
+    {
+        $configured = parse_url($this->urls->baseUrl(), PHP_URL_HOST);
+        $actual = $request->getUri()->getHost();
+
+        if (!is_string($configured) || $configured === '' || $actual === '') {
+            return null;
+        }
+
+        return strcasecmp($configured, $actual) === 0 ? null : $this->urls->baseUrl();
     }
 }

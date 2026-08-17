@@ -18,6 +18,13 @@ use SensitiveParameter;
  */
 final class AdminUser
 {
+    /**
+     * Length is the only rule worth enforcing. Composition rules ("one capital,
+     * one symbol") push people towards `Password1!` and are not what stops an
+     * attacker — length is.
+     */
+    public const int MINIMUM_PASSWORD_LENGTH = 12;
+
     public function __construct(
         public readonly AdminUserId $id,
         public readonly string $email,
@@ -101,6 +108,12 @@ final class AdminUser
 
     private static function hashPassword(#[SensitiveParameter] string $plainPassword): string
     {
+        // Guarded here rather than in the controller, so a password set from the
+        // console, the seeder or a future import cannot bypass the rule.
+        if (mb_strlen($plainPassword) < self::MINIMUM_PASSWORD_LENGTH) {
+            throw WeakPassword::tooShort(self::MINIMUM_PASSWORD_LENGTH);
+        }
+
         // Argon2id: memory-hard, so a leaked hash is expensive to attack even
         // with a GPU farm.
         return password_hash($plainPassword, PASSWORD_ARGON2ID);

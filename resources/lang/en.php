@@ -233,4 +233,17 @@ return [
     'common.created_at' => 'Created',
     'common.status' => 'Status',
     'common.never' => 'Never',
+    // Password
+    'password.title' => 'Change your password',
+    'password.hint' => 'At least :min characters. Longer is better than complicated.',
+    'password.current' => 'Current password',
+    'password.new' => 'New password',
+    'password.confirm' => 'Confirm new password',
+    'password.submit' => 'Change password',
+    'password.changed' => 'Your password has been changed.',
+    'password.wrong_current' => 'That is not your current password.',
+    'password.mismatch' => 'The two new passwords do not match.',
+    'password.too_short' => 'A password must be at least :min characters long.',
+    'password.throttled' => 'Too many attempts. Wait a minute and try again.',
+    'dashboard.url_mismatch' => 'APP_URL is set to :configured, but you are not reading this page there. Banks are sent that address to return payers to, so payments would be charged and never confirmed. Fix APP_URL in .env and restart.',
 ];

@@ -1,5 +1,36 @@
 # Operations
 
+## Deploying to a server
+
+```bash
+cp .env.example .env
+make key                 # put the output in APP_KEY
+```
+
+Then edit `.env`:
+
+| | |
+|---|---|
+| `APP_URL` | the public HTTPS address of this service |
+| `APP_ENV` | `production` |
+| `APP_KEY` | the key you just generated — back it up |
+
+```bash
+make up
+make logs                # the first-run admin password is printed once
+```
+
+`APP_ENV=production` turns on the startup guard: the application refuses to
+boot with a missing or malformed `APP_KEY`, with `APP_DEBUG` on, or with an
+`APP_URL` no bank could reach. It lists every problem at once, so a deployment
+is not a sequence of one-mistake-at-a-time restarts.
+
+If a server is left on `APP_ENV=local` those checks do not run — so the panel
+warns instead, whenever you reach it on a host that is not the one in
+`APP_URL`.
+
+---
+
 ## Before you take real money
 
 - [ ] `APP_URL` is the public **HTTPS** URL of this service. Banks store it and
@@ -18,6 +49,8 @@
       IP allowlist at your reverse proxy.
 - [ ] The demo website created by the first-run seed has been deleted or
       renamed, and its API key revoked.
+- [ ] The first-run admin password, which was printed into the container logs,
+      has been changed from **Settings → Change your password**.
 - [ ] Backups of `/var/lib/gateway` are running and have been restored once.
 
 ---
@@ -122,6 +155,16 @@ Zero downtime, because a website may hold several active keys at once:
 2. Deploy the new key to that shop.
 3. Watch **Last used** on the old key until it stops moving.
 4. **Revoke** the old key.
+
+### Forgotten admin password
+
+```bash
+docker compose exec app php bin/console admin:password you@example.com
+```
+
+Prints a new generated password. Passwords are never accepted as command
+arguments — a password on a command line ends up in the shell history and in
+the process list.
 
 Rotating `APP_KEY` is a different matter: there is no re-encryption command, so
 it means re-entering every gateway credential and re-issuing every API key. Set

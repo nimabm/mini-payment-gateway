@@ -6,6 +6,12 @@
 {% block heading %}{{ t('dashboard.title') }}{% endblock %}
 
 {% block content %}
+    {% if urlMismatch %}
+        <div class="banner banner-error" style="margin-bottom:18px">
+            {{ t('dashboard.url_mismatch', {'configured': urlMismatch}) }}
+        </div>
+    {% endif %}
+
     <div class="grid grid-4" style="margin-bottom:18px">
         {{ ui.stat(t('dashboard.today'), today) }}
         {{ ui.stat(t('dashboard.last_7_days'), week) }}

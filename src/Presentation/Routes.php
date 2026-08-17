@@ -10,6 +10,7 @@ use App\Presentation\Admin\AuthController;
 use App\Presentation\Admin\DashboardController;
 use App\Presentation\Admin\GatewayController;
 use App\Presentation\Admin\MerchantController;
+use App\Presentation\Admin\PasswordController;
 use App\Presentation\Admin\ReportController;
 use App\Presentation\Admin\SettingsController;
 use App\Presentation\Admin\TransactionController;
@@ -110,6 +111,7 @@ final class Routes
             $group->get('/settings', [SettingsController::class, 'show']);
             $group->post('/settings', [SettingsController::class, 'update']);
             $group->post('/settings/preferences', [SettingsController::class, 'updatePreferences']);
+            $group->post('/settings/password', [PasswordController::class, 'update']);
 
             $group->get('/audit', AuditController::class);
         })->add(AdminAuthMiddleware::class);

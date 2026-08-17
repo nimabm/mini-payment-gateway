@@ -8,6 +8,7 @@ use App\Application\Settings\CalendarSystem;
 use App\Application\Settings\Locale;
 use App\Application\Settings\SettingKey;
 use App\Application\Settings\Settings;
+use App\Domain\Admin\AdminUser;
 use App\Domain\Admin\AdminUserRepository;
 use App\Infrastructure\Audit\AuditLogger;
 use App\Presentation\Support\TemplateRenderer;
@@ -42,6 +43,7 @@ final readonly class SettingsController
             'timezones' => DateTimeZone::listIdentifiers(),
             'flash' => $this->session->pull('flash'),
             'csrfToken' => $this->session->csrfToken(),
+            'minimumPasswordLength' => AdminUser::MINIMUM_PASSWORD_LENGTH,
         ]);
     }
 

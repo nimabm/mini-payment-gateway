@@ -94,7 +94,10 @@ Two things to set before real money moves:
 - **Websites → your site → Allowed return hosts.** Empty means "any host",
   which turns your gateway into an open redirect. Fill it in.
 - **`APP_URL`** in `.env` must be the public HTTPS URL of this service. The
-  banks store it and send payers back to it.
+  banks store it and send payers back to it. With `APP_ENV=production` the
+  application refuses to start if this is still pointing at localhost.
+- **Change the first-run password** from *Settings → Change your password*. It
+  was printed into the container logs, which is no place for a live credential.
 
 ---
 
@@ -157,3 +160,14 @@ SQLite, Slim or ZarinPal exist.
 ## Licence
 
 MIT.
+
+---
+
+## Credits
+
+Built by **Nima** and **Claude**.
+
+| | |
+|---|---|
+| **Nima** | Software engineer and architect — direction, design decisions, review |
+| **Claude** | Software developer — implementation |

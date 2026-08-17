@@ -20,6 +20,7 @@ final readonly class Kernel
         'migrate' => MigrateCommand::class,
         'seed' => SeedCommand::class,
         'admin:create' => CreateAdminCommand::class,
+        'admin:password' => ResetPasswordCommand::class,
         'worker:run' => WorkerCommand::class,
         'worker:once' => WorkerOnceCommand::class,
     ];
@@ -68,6 +69,7 @@ final readonly class Kernel
         echo "  migrate         Apply pending database migrations\n";
         echo "  seed            Create an admin user, a demo website and the built-in gateways\n";
         echo "  admin:create    Create an admin user: admin:create <email> [name]\n";
+        echo "  admin:password  Reset an admin password: admin:password <email>\n";
         echo "  worker:run      Run the background worker loop (webhooks, reconciliation, expiry)\n";
         echo "  worker:once     Run one worker pass and exit — useful from cron\n";
     }

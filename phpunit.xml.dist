@@ -28,6 +28,6 @@
         <env name="APP_DEBUG" value="true"/>
         <env name="APP_URL" value="http://gateway.test"/>
         <env name="DB_PATH" value=":memory:"/>
-        <env name="APP_KEY" value="Y2hhbmdlLW1lLXRoaXMta2V5LWlzLWZvci10ZXN0cyEh"/>
+        <env name="APP_KEY" value="a2tra2tra2tra2tra2tra2tra2tra2tra2tra2tra2s="/>
     </php>
 </phpunit>
