@@ -1,0 +1,11 @@
+/vendor/
+/var/
+/.idea/
+/.vscode/
+.env
+.env.local
+.phpunit.result.cache
+.php-cs-fixer.cache
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal

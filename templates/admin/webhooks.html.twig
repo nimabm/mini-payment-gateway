@@ -1,0 +1,64 @@
+{% extends 'admin/layout.html.twig' %}
+{% set active = 'webhooks' %}
+
+{% block title %}{{ t('webhooks.title') }}{% endblock %}
+{% block heading %}{{ t('webhooks.title') }}{% endblock %}
+
+{% block actions %}
+    <div class="switcher">
+        <a href="/admin/webhooks" class="{{ status is empty ? 'is-active' }}">{{ t('common.all') }}</a>
+        <a href="/admin/webhooks?status=pending" class="{{ status == 'pending' ? 'is-active' }}">{{ t('webhooks.status.pending') }}</a>
+        <a href="/admin/webhooks?status=exhausted" class="{{ status == 'exhausted' ? 'is-active' }}">{{ t('webhooks.status.exhausted') }}</a>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <div class="card">
+        {% if deliveries is empty %}
+            <div class="empty">{{ t('webhooks.empty') }}</div>
+        {% else %}
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>{{ t('webhooks.event') }}</th>
+                        <th class="wrap">{{ t('transactions.merchant') }}</th>
+                        <th>{{ t('transactions.order_id') }}</th>
+                        <th>{{ t('common.status') }}</th>
+                        <th class="right">{{ t('webhooks.attempts') }}</th>
+                        <th>{{ t('webhooks.last_response') }}</th>
+                        <th>{{ t('webhooks.next_attempt') }}</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for delivery in deliveries %}
+                        <tr>
+                            <td class="mono">{{ delivery.event }}</td>
+                            <td class="wrap">{{ delivery.merchant_name }}</td>
+                            <td><a href="/admin/transactions/{{ delivery.payment_id }}">{{ delivery.order_id }}</a></td>
+                            <td>
+                                <span class="badge {{ delivery.status == 'delivered' ? 'badge-success'
+                                    : (delivery.status == 'pending' ? 'badge-pending' : 'badge-danger') }}">
+                                    {{ webhook_status_label(delivery.status) }}
+                                </span>
+                            </td>
+                            <td class="right numeric">{{ delivery.attempts|digits }}</td>
+                            <td class="mono">{{ delivery.last_response_code ?: '—' }}</td>
+                            <td class="muted mono">{{ delivery.next_attempt_at ?: '—' }}</td>
+                            <td class="right">
+                                {% if delivery.status != 'delivered' %}
+                                    <form method="post" action="/admin/webhooks/{{ delivery.id }}/requeue">
+                                        <input type="hidden" name="_token" value="{{ csrfToken }}">
+                                        <button type="submit" class="btn btn-sm">{{ t('webhooks.requeue') }}</button>
+                                    </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

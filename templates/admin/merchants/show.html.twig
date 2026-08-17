@@ -1,0 +1,141 @@
+{% extends 'admin/layout.html.twig' %}
+{% set active = 'merchants' %}
+
+{% block title %}{{ merchant.name }}{% endblock %}
+{% block heading %}{{ merchant.name }}{% endblock %}
+
+{% block actions %}
+    <a class="btn btn-sm" href="/admin/merchants/{{ merchant.id.value }}/edit">{{ t('merchants.edit') }}</a>
+    <form method="post" action="/admin/merchants/{{ merchant.id.value }}/status" style="display:inline">
+        <input type="hidden" name="_token" value="{{ csrfToken }}">
+        <button type="submit" class="btn btn-sm">
+            {{ merchant.status().canCreatePayments() ? t('merchants.suspend') : t('merchants.activate') }}
+        </button>
+    </form>
+{% endblock %}
+
+{% block content %}
+    {# Shown exactly once, immediately after the key is minted. There is no way
+       to see it again — that is the point. #}
+    {% if freshSecret %}
+        <div class="secret-box">
+            <strong>{{ t('merchants.secret_warning') }}</strong>
+            <div class="stack" style="margin-top:10px">
+                <div>
+                    <div class="muted">{{ t('merchants.key_id') }}</div>
+                    <div class="mono">{{ freshKeyId }}</div>
+                </div>
+                <div>
+                    <div class="muted">{{ t('merchants.secret') }}</div>
+                    <div class="mono">{{ freshSecret }}</div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="grid grid-2">
+        <div class="card">
+            <h2>{{ t('merchants.title') }}</h2>
+            <div class="table-wrap">
+                <table>
+                    <tbody>
+                    <tr><th>{{ t('merchants.slug') }}</th><td class="mono">{{ merchant.slug }}</td></tr>
+                    <tr>
+                        <th>{{ t('common.status') }}</th>
+                        <td>
+                            <span class="badge {{ merchant.status().canCreatePayments() ? 'badge-success' : 'badge-neutral' }}">
+                                {{ merchant.status().value }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr><th>{{ t('merchants.default_currency') }}</th><td>{{ merchant.defaultCurrency().value }}</td></tr>
+                    <tr><th class="wrap">{{ t('merchants.webhook_url') }}</th><td class="mono wrap">{{ merchant.webhookUrl() ?: '—' }}</td></tr>
+                    <tr>
+                        <th class="wrap">{{ t('merchants.callback_hosts') }}</th>
+                        <td class="mono wrap">{{ merchant.allowedCallbackHosts()|join(', ') ?: t('common.all') }}</td>
+                    </tr>
+                    <tr>
+                        <th class="wrap">{{ t('merchants.ip_allowlist') }}</th>
+                        <td class="mono wrap">{{ merchant.ipAllowlist()|join(', ') ?: t('common.all') }}</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>{{ t('merchants.gateways') }}</h2>
+            {% for gateway in gateways %}
+                <div class="spread" style="padding:8px 0; border-bottom:1px solid var(--border)">
+                    <span>{{ gateway.label }}</span>
+                    <span>
+                        {% if gateway.isSandbox() %}
+                            <span class="badge badge-sandbox">{{ t('gateways.sandbox_badge') }}</span>
+                        {% else %}
+                            <span class="badge badge-live">{{ t('gateways.live_badge') }}</span>
+                        {% endif %}
+                    </span>
+                </div>
+            {% else %}
+                <div class="empty">{{ t('gateways.empty') }}</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="spread" style="margin-bottom:12px">
+            <h2 style="margin:0">{{ t('merchants.credentials') }}</h2>
+            <form method="post" action="/admin/merchants/{{ merchant.id.value }}/credentials" class="row">
+                <input type="hidden" name="_token" value="{{ csrfToken }}">
+                <input type="text" name="label" placeholder="production" style="width:170px">
+                <button type="submit" class="btn btn-primary btn-sm">{{ t('merchants.issue_credential') }}</button>
+            </form>
+        </div>
+
+        {% if credentials is empty %}
+            <div class="empty">{{ t('common.none') }}</div>
+        {% else %}
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>{{ t('merchants.key_id') }}</th>
+                        <th>{{ t('gateways.label') }}</th>
+                        <th>{{ t('common.status') }}</th>
+                        <th>{{ t('merchants.last_used') }}</th>
+                        <th>{{ t('common.created_at') }}</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for credential in credentials %}
+                        <tr>
+                            <td class="mono">{{ credential.keyId }}</td>
+                            <td>{{ credential.label() }}</td>
+                            <td>
+                                {% if credential.isActive() %}
+                                    <span class="badge badge-success">{{ t('gateways.enabled') }}</span>
+                                {% else %}
+                                    <span class="badge badge-neutral">{{ t('merchants.revoked') }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="muted">{{ credential.lastUsedAt() ? credential.lastUsedAt()|datetime : t('merchants.never_used') }}</td>
+                            <td class="muted">{{ credential.createdAt|date_only }}</td>
+                            <td class="right">
+                                {% if credential.isActive() %}
+                                    <form method="post"
+                                          action="/admin/merchants/{{ merchant.id.value }}/credentials/{{ credential.id.value }}/revoke"
+                                          onsubmit="return confirm('{{ t('common.confirm') }}')">
+                                        <input type="hidden" name="_token" value="{{ csrfToken }}">
+                                        <button type="submit" class="btn btn-sm btn-danger">{{ t('merchants.revoke') }}</button>
+                                    </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

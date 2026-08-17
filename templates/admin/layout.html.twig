@@ -1,0 +1,74 @@
+{# The panel shell. Direction and language come from PanelContext, so a locale
+   change flips the whole layout without any template knowing how. #}
+{% set active = active|default('') %}
+<!DOCTYPE html>
+<html lang="{{ locale.value }}" dir="{{ direction }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>{% block title %}{{ t('app.name') }}{% endblock %} — {{ t('app.name') }}</title>
+    <link rel="stylesheet" href="/assets/panel.css">
+    <link rel="icon" href="data:,">
+</head>
+<body class="{{ direction }}">
+<div class="shell">
+    <aside class="sidebar">
+        <div class="brand">
+            <span class="brand-mark">↹</span>
+            <span class="brand-text">{{ t('app.name') }}</span>
+        </div>
+
+        <nav>
+            <a href="/admin" class="{{ active == 'dashboard' ? 'is-active' }}">{{ t('nav.dashboard') }}</a>
+            <a href="/admin/transactions" class="{{ active == 'transactions' ? 'is-active' }}">{{ t('nav.transactions') }}</a>
+            <a href="/admin/reports" class="{{ active == 'reports' ? 'is-active' }}">{{ t('nav.reports') }}</a>
+            <a href="/admin/merchants" class="{{ active == 'merchants' ? 'is-active' }}">{{ t('nav.merchants') }}</a>
+            <a href="/admin/gateways" class="{{ active == 'gateways' ? 'is-active' }}">{{ t('nav.gateways') }}</a>
+            <a href="/admin/webhooks" class="{{ active == 'webhooks' ? 'is-active' }}">{{ t('nav.webhooks') }}</a>
+            <a href="/admin/audit" class="{{ active == 'audit' ? 'is-active' }}">{{ t('nav.audit') }}</a>
+            <a href="/admin/settings" class="{{ active == 'settings' ? 'is-active' }}">{{ t('nav.settings') }}</a>
+        </nav>
+
+        <div class="sidebar-foot">
+            {% if currentUser %}
+                <div class="who">{{ currentUser.name ?: currentUser.email }}</div>
+            {% endif %}
+            <a class="muted" href="/admin/logout">{{ t('nav.logout') }}</a>
+        </div>
+    </aside>
+
+    <main class="main">
+        <header class="topbar">
+            <h1>{% block heading %}{% endblock %}</h1>
+
+            <div class="topbar-actions">
+                {# Language and calendar switchers: session-level, so trying the
+                   other language never changes anything for anybody else. #}
+                <div class="switcher">
+                    <a href="/admin/locale?locale=fa" class="{{ locale.value == 'fa' ? 'is-active' }}">فارسی</a>
+                    <a href="/admin/locale?locale=en" class="{{ locale.value == 'en' ? 'is-active' }}">EN</a>
+                </div>
+                <div class="switcher">
+                    <a href="/admin/locale?calendar=jalali"
+                       class="{{ panel().calendar.value == 'jalali' ? 'is-active' }}">{{ t('settings.calendar.jalali') }}</a>
+                    <a href="/admin/locale?calendar=gregorian"
+                       class="{{ panel().calendar.value == 'gregorian' ? 'is-active' }}">{{ t('settings.calendar.gregorian') }}</a>
+                </div>
+                {% block actions %}{% endblock %}
+            </div>
+        </header>
+
+        {% if panel().isSandboxForced %}
+            <div class="banner banner-warn">{{ t('gateways.force_sandbox_warning') }}</div>
+        {% endif %}
+
+        {% if flash is defined and flash %}
+            <div class="banner banner-{{ flash.tone }}">{{ t(flash.message, flash.replacements|default({})) }}</div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </main>
+</div>
+</body>
+</html>

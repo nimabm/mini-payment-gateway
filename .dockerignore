@@ -1,0 +1,10 @@
+.git
+.github
+.idea
+.vscode
+vendor
+var
+docs
+*.md
+.env
+.env.local

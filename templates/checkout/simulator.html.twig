@@ -1,0 +1,19 @@
+{% extends 'checkout/layout.html.twig' %}
+
+{% block title %}{{ t('checkout.simulator_title') }}{% endblock %}
+
+{% block content %}
+    <h2>{{ t('checkout.simulator_title') }}</h2>
+    <p class="muted">{{ t('checkout.simulator_body') }}</p>
+
+    <div class="stat" style="margin:18px 0">
+        <div class="stat-label">{{ t('transactions.amount') }}</div>
+        <div class="stat-value">{{ payment.amount|money }}</div>
+        <div class="stat-sub">{{ payment.orderId }}</div>
+    </div>
+
+    <div class="row" style="justify-content:center">
+        <a class="btn btn-primary" href="{{ payUrl }}">{{ t('checkout.simulator_pay') }}</a>
+        <a class="btn btn-danger" href="{{ cancelUrl }}">{{ t('checkout.simulator_cancel') }}</a>
+    </div>
+{% endblock %}

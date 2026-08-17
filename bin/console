@@ -1,0 +1,22 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use App\Bootstrap;
+use App\Console\Kernel;
+use App\Infrastructure\Config\MisconfiguredApplication;
+
+require dirname(__DIR__) . '/vendor/autoload.php';
+
+try {
+    $container = Bootstrap::container();
+} catch (MisconfiguredApplication $e) {
+    // An operator is reading this, so print the whole thing — it is the fastest
+    // route from a failed deployment to the line of .env that caused it.
+    fwrite(STDERR, $e->getMessage() . "\n");
+
+    exit(1);
+}
+
+exit((new Kernel($container))->run($argv));

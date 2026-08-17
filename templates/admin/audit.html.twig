@@ -1,0 +1,40 @@
+{% extends 'admin/layout.html.twig' %}
+{% set active = 'audit' %}
+
+{% block title %}{{ t('audit.title') }}{% endblock %}
+{% block heading %}{{ t('audit.title') }}{% endblock %}
+
+{% block content %}
+    <div class="card">
+        {% if entries is empty %}
+            <div class="empty">{{ t('audit.empty') }}</div>
+        {% else %}
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>{{ t('audit.when') }}</th>
+                        <th>{{ t('audit.actor') }}</th>
+                        <th>{{ t('audit.action') }}</th>
+                        <th>{{ t('audit.subject') }}</th>
+                        <th class="wrap">{{ t('common.actions') }}</th>
+                        <th>{{ t('audit.ip') }}</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for entry in entries %}
+                        <tr>
+                            <td class="muted mono">{{ entry.created_at }}</td>
+                            <td>{{ entry.actor_email ?: '—' }}</td>
+                            <td class="mono">{{ entry.action }}</td>
+                            <td class="mono">{{ entry.subject ?: '—' }}</td>
+                            <td class="wrap mono muted">{{ entry.context }}</td>
+                            <td class="mono muted">{{ entry.ip_address ?: '—' }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}
