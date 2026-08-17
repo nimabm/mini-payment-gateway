@@ -3,26 +3,50 @@ name: mini-payment-gateway
 services:
   app:
     build: .
-    ports:
-      - "${HTTP_PORT:-8080}:80"
+    container_name: mini-payment-gateway-app
+    # Nothing is published to the host: Nginx Proxy Manager reaches this
+    # container over the `proxy` network and terminates TLS in front of it.
+    # Uncomment to run without a proxy — locally, for instance.
+#    ports:
+#      - "${HTTP_PORT:-8080}:80"
     env_file: .env
     volumes:
-      # A named volume, not a bind mount: SQLite's file locking is unreliable
-      # across the macOS and Windows bind-mount layer.
-      - gateway-data:/var/lib/gateway
+      # A bind mount, so the database is a file you can see, back up and copy
+      # off the server without going through Docker.
+      #
+      # Note it is SQLite on a bind mount: fine on a Linux host, but the macOS
+      # and Windows mount layers have unreliable file locking. On a development
+      # machine prefer a named volume.
+      - ./gateway-data:/var/lib/gateway
     restart: unless-stopped
+    networks:
+      # `backend` carries app↔worker traffic; `proxy` is how the reverse proxy
+      # reaches this container. Both are needed — on `backend` alone, Nginx
+      # Proxy Manager cannot see it.
+      - backend
+      - proxy
 
   # Webhook retries, PSP reconciliation, payment expiry. Same image, different
   # command. Without it, stuck payments are never resolved.
   worker:
     build: .
+    container_name: mini-payment-gateway-worker
     command: ["php", "/app/bin/console", "worker:run"]
     env_file: .env
     volumes:
-      - gateway-data:/var/lib/gateway
+      - ./gateway-data:/var/lib/gateway
     depends_on:
       - app
     restart: unless-stopped
+    networks:
+      # Deliberately not on `proxy`: the worker serves no HTTP and nothing
+      # should be able to route to it.
+      - backend
 
-volumes:
-  gateway-data:
+networks:
+  backend:
+    driver: bridge
+  proxy:
+    # The network Nginx Proxy Manager runs on.
+    external: true
+    name: nginx_proxy

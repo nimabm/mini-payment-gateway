@@ -51,7 +51,9 @@ an administrator — then prints the sign-in details:
 make logs
 ```
 
-Then open **<http://localhost:8080/admin>**.
+Then open **/admin** on whatever host your reverse proxy serves. To run it
+without a proxy, uncomment the `ports` block in `docker-compose.yml` and use
+<http://localhost:8080/admin>.
 
 Without `make`, it is two commands:
 
@@ -132,6 +134,11 @@ make reset    # stop and delete the database — destroys every payment
 Two containers, one image: `app` (Apache with mod_php) and `worker` (webhook
 retries, reconciliation, expiry). Upgrading is `make up` again; migrations run
 on boot.
+
+Nothing is published to the host — `app` joins the external `nginx_proxy`
+network so a reverse proxy can reach it at **`mini-payment-gateway-app:80`** and
+terminate TLS. Running without a proxy? Uncomment the `ports` block in
+`docker-compose.yml`. See [OPERATIONS.md](docs/OPERATIONS.md#networks).
 
 ---
 
