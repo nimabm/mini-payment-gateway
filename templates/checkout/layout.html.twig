@@ -1,0 +1,21 @@
+{# The payer-facing shell. Deliberately plain: this page is on the critical
+   path of somebody's payment, so it loads one stylesheet and nothing else. #}
+<!DOCTYPE html>
+<html lang="{{ locale.value }}" dir="{{ direction }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>{% block title %}{{ panel().brandName }}{% endblock %}</title>
+    <link rel="stylesheet" href="/assets/panel.css">
+    <link rel="icon" href="data:,">
+    {% block head %}{% endblock %}
+</head>
+<body class="{{ direction }}">
+<div class="checkout">
+    <div class="card">
+        {% block content %}{% endblock %}
+    </div>
+</div>
+</body>
+</html>

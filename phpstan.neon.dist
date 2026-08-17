@@ -1,0 +1,9 @@
+parameters:
+    level: 9
+    paths:
+        - src
+        - tests
+        - bin
+    tmpDir: var/cache/phpstan
+    treatPhpDocTypesAsCertain: false
+    checkMissingIterableValueType: true

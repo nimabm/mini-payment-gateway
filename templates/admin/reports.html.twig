@@ -1,0 +1,223 @@
+{% extends 'admin/layout.html.twig' %}
+{% set active = 'reports' %}
+
+{% block title %}{{ t('reports.title') }}{% endblock %}
+{% block heading %}{{ t('reports.title') }}{% endblock %}
+
+{% block content %}
+    <div class="card">
+        <form method="get" action="/admin/reports">
+            <div class="filters">
+                <div class="field">
+                    <label for="from">{{ t('transactions.from') }}</label>
+                    <input type="text" id="from" name="from" dir="ltr"
+                           value="{{ query.from|default('') }}" placeholder="{{ panel().calendar.inputHint }}">
+                </div>
+                <div class="field">
+                    <label for="to">{{ t('transactions.to') }}</label>
+                    <input type="text" id="to" name="to" dir="ltr"
+                           value="{{ query.to|default('') }}" placeholder="{{ panel().calendar.inputHint }}">
+                </div>
+                <div class="field">
+                    <label for="merchant">{{ t('transactions.merchant') }}</label>
+                    <select id="merchant" name="merchant">
+                        <option value="">{{ t('common.all') }}</option>
+                        {% for merchant in merchants %}
+                            <option value="{{ merchant.id.value }}"
+                                    {{ query.merchant|default('') == merchant.id.value ? 'selected' }}>
+                                {{ merchant.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="gateway">{{ t('transactions.gateway') }}</label>
+                    <select id="gateway" name="gateway">
+                        <option value="">{{ t('common.all') }}</option>
+                        {% for gateway in gateways %}
+                            <option value="{{ gateway.id.value }}"
+                                    {{ query.gateway|default('') == gateway.id.value ? 'selected' }}>
+                                {{ gateway.label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="field row">
+                    <button type="submit" class="btn btn-primary">{{ t('transactions.apply') }}</button>
+                    <a class="btn" href="/admin/reports">{{ t('transactions.reset') }}</a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="grid grid-4" style="margin-bottom:18px">
+        <div class="stat">
+            <div class="stat-label">{{ t('reports.total') }}</div>
+            <div class="stat-value">{{ summary.total|digits }}</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">{{ t('reports.paid') }}</div>
+            <div class="stat-value">{{ summary.paid|digits }}</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">{{ t('reports.volume') }}</div>
+            <div class="stat-value" style="font-size:18px">
+                {% for currency, volume in summary.paidVolumeByCurrency %}
+                    <div>{{ volume|amount(currency) }}</div>
+                {% else %}—{% endfor %}
+            </div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">{{ t('reports.success_rate') }}</div>
+            <div class="stat-value">{{ summary.successRate()|percent }}</div>
+            <div class="meter" style="margin-top:8px"><span style="width:{{ summary.successRate() }}%"></span></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>{{ t('reports.daily') }}</h2>
+        {% if daily is empty %}
+            <div class="empty">{{ t('dashboard.no_data') }}</div>
+        {% else %}
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>{{ t('reports.date') }}</th>
+                        <th class="right">{{ t('reports.total') }}</th>
+                        <th class="right">{{ t('reports.paid') }}</th>
+                        <th class="right">{{ t('reports.failed') }}</th>
+                        <th class="right">{{ t('reports.volume') }}</th>
+                        <th class="right">{{ t('reports.success_rate') }}</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for bucket in daily %}
+                        <tr>
+                            <td>{{ bucket.date|date_only }}</td>
+                            <td class="right numeric">{{ bucket.total|digits }}</td>
+                            <td class="right numeric">{{ bucket.paid|digits }}</td>
+                            <td class="right numeric">{{ bucket.failed|digits }}</td>
+                            <td class="right numeric">{{ bucket.paidVolume|amount(bucket.currency) }}</td>
+                            <td class="right numeric">{{ bucket.successRate()|percent }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="grid grid-2">
+        <div class="card">
+            <h2>{{ t('reports.by_merchant') }}</h2>
+            {% if byMerchant is empty %}
+                <div class="empty">{{ t('dashboard.no_data') }}</div>
+            {% else %}
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th class="wrap">{{ t('transactions.merchant') }}</th>
+                            <th class="right">{{ t('reports.total') }}</th>
+                            <th class="right">{{ t('reports.paid') }}</th>
+                            <th class="right">{{ t('reports.volume') }}</th>
+                            <th class="right">{{ t('reports.average') }}</th>
+                            <th class="right">{{ t('reports.success_rate') }}</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for row in byMerchant %}
+                            <tr>
+                                <td class="wrap"><a href="/admin/transactions?merchant={{ row.merchantId }}">{{ row.merchantName }}</a></td>
+                                <td class="right numeric">{{ row.total|digits }}</td>
+                                <td class="right numeric">{{ row.paid|digits }}</td>
+                                <td class="right numeric">{{ row.paidVolume|amount(row.currency) }}</td>
+                                <td class="right numeric">{{ row.averageBasket()|amount(row.currency) }}</td>
+                                <td class="right numeric">{{ row.successRate()|percent }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <h2>{{ t('reports.by_gateway') }}</h2>
+            {% if byGateway is empty %}
+                <div class="empty">{{ t('dashboard.no_data') }}</div>
+            {% else %}
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th class="wrap">{{ t('transactions.gateway') }}</th>
+                            <th class="right">{{ t('reports.attempts') }}</th>
+                            <th class="right">{{ t('reports.paid') }}</th>
+                            <th class="right">{{ t('reports.failed') }}</th>
+                            <th class="right">{{ t('reports.success_rate') }}</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for row in byGateway %}
+                            <tr>
+                                <td class="wrap">
+                                    {{ row.gatewayLabel }}
+                                    {% if row.sandbox %}<span class="badge badge-sandbox">{{ t('gateways.sandbox_badge') }}</span>{% endif %}
+                                </td>
+                                <td class="right numeric">{{ row.attempts|digits }}</td>
+                                <td class="right numeric">{{ row.succeeded|digits }}</td>
+                                <td class="right numeric">{{ row.failed|digits }}</td>
+                                <td class="right numeric">{{ row.successRate()|percent }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <h2>{{ t('reports.failures') }}</h2>
+            {% if failures is empty %}
+                <div class="empty">{{ t('dashboard.no_data') }}</div>
+            {% else %}
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>{{ t('reports.reason') }}</th>
+                            <th class="wrap">{{ t('transactions.failure') }}</th>
+                            <th class="right">{{ t('reports.occurrences') }}</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for failure in failures %}
+                            <tr>
+                                <td class="mono">{{ failure.code }}</td>
+                                <td class="wrap muted">{{ failure.message }}</td>
+                                <td class="right numeric">{{ failure.count|digits }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <h2>{{ t('reports.hourly') }}</h2>
+            {% set peak = 1 %}
+            {% for count in hourly %}{% set peak = max(peak, count) %}{% endfor %}
+            <div class="chart">
+                {% for hour, count in hourly %}
+                    <div class="chart-col" title="{{ hour }}:00 — {{ count }}">
+                        <div class="chart-bar" style="height:{{ (count / peak * 100)|round }}%"></div>
+                        <div class="chart-label">{{ hour|digits }}</div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

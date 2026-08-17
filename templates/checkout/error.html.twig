@@ -1,0 +1,12 @@
+{% extends 'checkout/layout.html.twig' %}
+
+{% block title %}{{ t(titleKey) }}{% endblock %}
+
+{% block content %}
+    <h2>{{ t(titleKey) }}</h2>
+    <p class="muted">{{ t(bodyKey) }}</p>
+
+    {# The technical detail is deliberately not rendered. A payer looking at a
+       failed payment gains nothing from a driver error, and it would leak how
+       the gateway is configured. It is in the logs and the admin panel. #}
+{% endblock %}

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="{{ locale.value }}" dir="{{ direction }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>{{ t('auth.title') }} — {{ t('app.name') }}</title>
+    <link rel="stylesheet" href="/assets/panel.css">
+    <link rel="icon" href="data:,">
+</head>
+<body class="{{ direction }}">
+<div class="auth">
+    <form class="card" method="post" action="/admin/login">
+        <h2>{{ t('auth.title') }}</h2>
+
+        {% if error %}
+            <div class="banner banner-danger">{{ t(error) }}</div>
+        {% endif %}
+
+        <input type="hidden" name="_token" value="{{ csrfToken }}">
+
+        <div class="field">
+            <label for="email">{{ t('auth.email') }}</label>
+            <input type="email" id="email" name="email" required autofocus autocomplete="username">
+        </div>
+
+        <div class="field">
+            <label for="password">{{ t('auth.password') }}</label>
+            <input type="password" id="password" name="password" required autocomplete="current-password">
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width:100%">{{ t('auth.submit') }}</button>
+
+        <div class="switcher" style="margin-top:16px; justify-content:center">
+            <a href="/admin/locale?locale=fa" class="{{ locale.value == 'fa' ? 'is-active' }}">فارسی</a>
+            <a href="/admin/locale?locale=en" class="{{ locale.value == 'en' ? 'is-active' }}">EN</a>
+        </div>
+    </form>
+</div>
+</body>
+</html>

@@ -1,0 +1,71 @@
+{% extends 'admin/layout.html.twig' %}
+{% set active = 'gateways' %}
+
+{% block title %}{{ t('gateways.title') }}{% endblock %}
+{% block heading %}{{ t('gateways.title') }}{% endblock %}
+
+{% block actions %}
+    <a class="btn btn-primary btn-sm" href="/admin/gateways/new">{{ t('gateways.new') }}</a>
+{% endblock %}
+
+{% block content %}
+    <div class="card">
+        {% if gateways is empty %}
+            <div class="empty">{{ t('gateways.empty') }}</div>
+        {% else %}
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                    <tr>
+                        <th class="wrap">{{ t('gateways.label') }}</th>
+                        <th>{{ t('gateways.driver') }}</th>
+                        <th>{{ t('gateways.sandbox') }}</th>
+                        <th>{{ t('gateways.enabled') }}</th>
+                        <th>{{ t('gateways.currencies') }}</th>
+                        <th class="right">{{ t('gateways.priority') }}</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for gateway in gateways %}
+                        <tr>
+                            <td class="wrap">
+                                <a href="/admin/gateways/{{ gateway.id.value }}/edit">{{ gateway.label }}</a>
+                            </td>
+                            <td>
+                                {{ drivers[gateway.driver.value] is defined
+                                    ? drivers[gateway.driver.value].displayName
+                                    : gateway.driver.value }}
+                            </td>
+                            <td>
+                                {% if gateway.isSandbox() %}
+                                    <span class="badge badge-sandbox">{{ t('gateways.sandbox_badge') }}</span>
+                                {% else %}
+                                    <span class="badge badge-live">{{ t('gateways.live_badge') }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge {{ gateway.isEnabled() ? 'badge-success' : 'badge-neutral' }}">
+                                    {{ gateway.isEnabled() ? t('common.yes') : t('common.no') }}
+                                </span>
+                            </td>
+                            <td class="mono">
+                                {% for currency in gateway.currencies() %}{{ currency.value }}{{ not loop.last ? ', ' }}{% endfor %}
+                            </td>
+                            <td class="right numeric">{{ gateway.priority()|digits }}</td>
+                            <td class="right">
+                                <form method="post" action="/admin/gateways/{{ gateway.id.value }}/toggle">
+                                    <input type="hidden" name="_token" value="{{ csrfToken }}">
+                                    <button type="submit" class="btn btn-sm">
+                                        {{ gateway.isEnabled() ? t('gateways.disable') : t('gateways.enable') }}
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends 'admin/layout.html.twig' %}
+{% set active = 'merchants' %}
+
+{% block title %}{{ t('merchants.title') }}{% endblock %}
+{% block heading %}{{ t('merchants.title') }}{% endblock %}
+
+{% block actions %}
+    <a class="btn btn-primary btn-sm" href="/admin/merchants/new">{{ t('merchants.new') }}</a>
+{% endblock %}
+
+{% block content %}
+    <div class="card">
+        {% if merchants is empty %}
+            <div class="empty">{{ t('merchants.empty') }}</div>
+        {% else %}
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                    <tr>
+                        <th class="wrap">{{ t('merchants.name') }}</th>
+                        <th>{{ t('merchants.slug') }}</th>
+                        <th>{{ t('common.status') }}</th>
+                        <th>{{ t('merchants.default_currency') }}</th>
+                        <th class="wrap">{{ t('merchants.webhook_url') }}</th>
+                        <th>{{ t('common.created_at') }}</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for merchant in merchants %}
+                        <tr>
+                            <td class="wrap"><a href="/admin/merchants/{{ merchant.id.value }}">{{ merchant.name }}</a></td>
+                            <td class="mono">{{ merchant.slug }}</td>
+                            <td>
+                                <span class="badge {{ merchant.status().canCreatePayments() ? 'badge-success' : 'badge-neutral' }}">
+                                    {{ merchant.status().value }}
+                                </span>
+                            </td>
+                            <td>{{ merchant.defaultCurrency().value }}</td>
+                            <td class="mono wrap muted">{{ merchant.webhookUrl() ?: '—' }}</td>
+                            <td class="muted">{{ merchant.createdAt|date_only }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

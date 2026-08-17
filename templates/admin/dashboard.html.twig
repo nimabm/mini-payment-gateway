@@ -1,0 +1,184 @@
+{% extends 'admin/layout.html.twig' %}
+{% import _self as ui %}
+{% set active = 'dashboard' %}
+
+{% block title %}{{ t('dashboard.title') }}{% endblock %}
+{% block heading %}{{ t('dashboard.title') }}{% endblock %}
+
+{% block content %}
+    <div class="grid grid-4" style="margin-bottom:18px">
+        {{ ui.stat(t('dashboard.today'), today) }}
+        {{ ui.stat(t('dashboard.last_7_days'), week) }}
+        {{ ui.stat(t('dashboard.last_30_days'), month) }}
+
+        <div class="stat">
+            <div class="stat-label">{{ t('dashboard.success_rate') }}</div>
+            <div class="stat-value">{{ month.successRate()|percent }}</div>
+            <div class="meter" style="margin-top:8px"><span style="width:{{ month.successRate() }}%"></span></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>{{ t('dashboard.trend') }}</h2>
+        {% if trend is not empty %}
+            {{ ui.chart(trend) }}
+        {% else %}
+            <div class="empty">{{ t('dashboard.no_data') }}</div>
+        {% endif %}
+    </div>
+
+    <div class="grid grid-2">
+        <div class="card">
+            <h2>{{ t('dashboard.by_merchant') }}</h2>
+            {% if byMerchant is not empty %}
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th class="wrap">{{ t('transactions.merchant') }}</th>
+                            <th class="right">{{ t('reports.paid') }}</th>
+                            <th class="right">{{ t('reports.volume') }}</th>
+                            <th class="right">{{ t('reports.success_rate') }}</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for row in byMerchant %}
+                            <tr>
+                                <td class="wrap"><a href="/admin/transactions?merchant={{ row.merchantId }}">{{ row.merchantName }}</a></td>
+                                <td class="right numeric">{{ row.paid|digits }}</td>
+                                <td class="right numeric">{{ row.paidVolume|amount(row.currency) }}</td>
+                                <td class="right numeric">{{ row.successRate()|percent }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="empty">{{ t('dashboard.no_data') }}</div>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <h2>{{ t('dashboard.by_gateway') }}</h2>
+            {% if byGateway is not empty %}
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th class="wrap">{{ t('transactions.gateway') }}</th>
+                            <th class="right">{{ t('reports.attempts') }}</th>
+                            <th class="right">{{ t('reports.success_rate') }}</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for row in byGateway %}
+                            <tr>
+                                <td class="wrap">
+                                    {{ row.gatewayLabel }}
+                                    {% if row.sandbox %}<span class="badge badge-sandbox">{{ t('gateways.sandbox_badge') }}</span>{% endif %}
+                                </td>
+                                <td class="right numeric">{{ row.attempts|digits }}</td>
+                                <td class="right numeric">{{ row.successRate()|percent }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="empty">{{ t('dashboard.no_data') }}</div>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <h2>{{ t('dashboard.stuck_payments') }}</h2>
+            {% if stuck.items is not empty %}
+                {{ ui.mini_table(stuck.items) }}
+            {% else %}
+                <div class="empty">{{ t('dashboard.no_data') }}</div>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <h2>{{ t('dashboard.recent_failures') }}</h2>
+            {% if recentFailures.items is not empty %}
+                {{ ui.mini_table(recentFailures.items) }}
+            {% else %}
+                <div class="empty">{{ t('dashboard.no_data') }}</div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if failures is not empty %}
+        <div class="card">
+            <h2>{{ t('reports.failures') }}</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>{{ t('reports.reason') }}</th>
+                        <th class="wrap">{{ t('transactions.failure') }}</th>
+                        <th class="right">{{ t('reports.occurrences') }}</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for failure in failures %}
+                        <tr>
+                            <td class="mono">{{ failure.code }}</td>
+                            <td class="wrap muted">{{ failure.message }}</td>
+                            <td class="right numeric">{{ failure.count|digits }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% macro stat(label, summary) %}
+    <div class="stat">
+        <div class="stat-label">{{ label }}</div>
+        <div class="stat-value">{{ summary.paid|digits }}</div>
+        <div class="stat-sub">
+            {% for currency, volume in summary.paidVolumeByCurrency %}
+                {{ volume|amount(currency) }}{{ not loop.last ? ' · ' }}
+            {% else %}
+                —
+            {% endfor %}
+        </div>
+    </div>
+{% endmacro %}
+
+{% macro chart(buckets) %}
+    {% set peak = 1 %}
+    {% for bucket in buckets %}
+        {% set peak = max(peak, bucket.total) %}
+    {% endfor %}
+
+    <div class="chart">
+        {% for bucket in buckets %}
+            <div class="chart-col" title="{{ bucket.paid }} / {{ bucket.total }}">
+                <div class="chart-bar failed" style="height:{{ (bucket.failed / peak * 100)|round }}%"></div>
+                <div class="chart-bar" style="height:{{ (bucket.paid / peak * 100)|round }}%"></div>
+                <div class="chart-label">{{ bucket.date|short_date }}</div>
+            </div>
+        {% endfor %}
+    </div>
+{% endmacro %}
+
+{% macro mini_table(rows) %}
+    <div class="table-wrap">
+        <table>
+            <tbody>
+            {% for row in rows %}
+                <tr>
+                    <td class="wrap"><a href="/admin/transactions/{{ row.paymentId }}">{{ row.orderId }}</a></td>
+                    <td class="muted wrap">{{ row.merchantName }}</td>
+                    <td class="right numeric">{{ row.amount|money }}</td>
+                    <td class="right muted">{{ row.createdAt|datetime }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endmacro %}

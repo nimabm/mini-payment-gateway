@@ -1,0 +1,11 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use App\Bootstrap;
+use App\Console\Kernel;
+
+require dirname(__DIR__) . '/vendor/autoload.php';
+
+exit((new Kernel(Bootstrap::container()))->run($argv));

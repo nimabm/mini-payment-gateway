@@ -1,0 +1,167 @@
+{% extends 'admin/layout.html.twig' %}
+{% set active = 'transactions' %}
+
+{% block title %}{{ t('transactions.title') }}{% endblock %}
+{% block heading %}{{ t('transactions.title') }}{% endblock %}
+
+{% block actions %}
+    <a class="btn btn-sm" href="/admin/transactions/export?{{ query|url_encode }}">{{ t('transactions.export') }}</a>
+{% endblock %}
+
+{% block content %}
+    <div class="card">
+        <h2>{{ t('transactions.filters') }}</h2>
+
+        <form method="get" action="/admin/transactions">
+            <div class="filters">
+                <div class="field">
+                    <label for="q">{{ t('transactions.search') }}</label>
+                    <input type="text" id="q" name="q" value="{{ query.q|default('') }}"
+                           placeholder="{{ t('transactions.search_hint') }}">
+                </div>
+
+                <div class="field">
+                    <label for="from">{{ t('transactions.from') }}</label>
+                    <input type="text" id="from" name="from" value="{{ query.from|default('') }}"
+                           placeholder="{{ panel().calendar.inputHint }}" dir="ltr">
+                </div>
+
+                <div class="field">
+                    <label for="to">{{ t('transactions.to') }}</label>
+                    <input type="text" id="to" name="to" value="{{ query.to|default('') }}"
+                           placeholder="{{ panel().calendar.inputHint }}" dir="ltr">
+                </div>
+
+                <div class="field">
+                    <label for="merchant">{{ t('transactions.merchant') }}</label>
+                    <select id="merchant" name="merchant">
+                        <option value="">{{ t('common.all') }}</option>
+                        {% for merchant in merchants %}
+                            <option value="{{ merchant.id.value }}"
+                                    {{ query.merchant|default('') == merchant.id.value ? 'selected' }}>
+                                {{ merchant.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="gateway">{{ t('transactions.gateway') }}</label>
+                    <select id="gateway" name="gateway">
+                        <option value="">{{ t('common.all') }}</option>
+                        {% for gateway in gateways %}
+                            <option value="{{ gateway.id.value }}"
+                                    {{ query.gateway|default('') == gateway.id.value ? 'selected' }}>
+                                {{ gateway.label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="status">{{ t('transactions.status') }}</label>
+                    <select id="status" name="status">
+                        <option value="">{{ t('common.all') }}</option>
+                        {% for status in statuses %}
+                            <option value="{{ status.value }}"
+                                    {{ query.status|default('') == status.value ? 'selected' }}>
+                                {{ status_label(status) }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="min_amount">{{ t('transactions.min_amount') }}</label>
+                    <input type="text" id="min_amount" name="min_amount"
+                           value="{{ query.min_amount|default('') }}" dir="ltr">
+                </div>
+
+                <div class="field">
+                    <label for="max_amount">{{ t('transactions.max_amount') }}</label>
+                    <input type="text" id="max_amount" name="max_amount"
+                           value="{{ query.max_amount|default('') }}" dir="ltr">
+                </div>
+
+                <div class="field row">
+                    <button type="submit" class="btn btn-primary">{{ t('transactions.apply') }}</button>
+                    <a class="btn" href="/admin/transactions">{{ t('transactions.reset') }}</a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="grid grid-4" style="margin-bottom:18px">
+        <div class="stat">
+            <div class="stat-label">{{ t('reports.total') }}</div>
+            <div class="stat-value">{{ summary.total|digits }}</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">{{ t('reports.paid') }}</div>
+            <div class="stat-value">{{ summary.paid|digits }}</div>
+            <div class="stat-sub">
+                {% for currency, volume in summary.paidVolumeByCurrency %}
+                    {{ volume|amount(currency) }}{{ not loop.last ? ' · ' }}
+                {% else %}—{% endfor %}
+            </div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">{{ t('reports.failed') }}</div>
+            <div class="stat-value">{{ summary.failed|digits }}</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">{{ t('reports.success_rate') }}</div>
+            <div class="stat-value">{{ summary.successRate()|percent }}</div>
+        </div>
+    </div>
+
+    <div class="card">
+        {% if results.isEmpty %}
+            <div class="empty">{{ t('transactions.empty') }}</div>
+        {% else %}
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>{{ t('transactions.order_id') }}</th>
+                        <th class="wrap">{{ t('transactions.merchant') }}</th>
+                        <th class="wrap">{{ t('transactions.gateway') }}</th>
+                        <th>{{ t('common.status') }}</th>
+                        <th class="right">{{ t('transactions.amount') }}</th>
+                        <th>{{ t('transactions.transaction_id') }}</th>
+                        <th>{{ t('transactions.created_at') }}</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for row in results.items %}
+                        <tr>
+                            <td><a href="/admin/transactions/{{ row.paymentId }}">{{ row.orderId }}</a></td>
+                            <td class="wrap">{{ row.merchantName }}</td>
+                            <td class="wrap muted">{{ row.gatewayLabel ?: '—' }}</td>
+                            <td><span class="badge badge-{{ status_tone(row.status) }}">{{ status_label(row.status) }}</span></td>
+                            <td class="right numeric">{{ row.amount|money }}</td>
+                            <td class="mono">{{ row.transactionId ?: '—' }}</td>
+                            <td class="muted">{{ row.createdAt|datetime }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if results.pageCount > 1 %}
+                <div class="pagination">
+                    {% if results.hasPrevious %}
+                        <a class="btn btn-sm" href="?{{ query|merge({page: results.page - 1})|url_encode }}">{{ t('common.previous') }}</a>
+                    {% endif %}
+                    <span class="muted">
+                        {{ t('common.page') }} {{ results.page|digits }} {{ t('common.of') }} {{ results.pageCount|digits }}
+                        · {{ results.total|digits }} {{ t('common.total') }}
+                    </span>
+                    {% if results.hasNext %}
+                        <a class="btn btn-sm" href="?{{ query|merge({page: results.page + 1})|url_encode }}">{{ t('common.next') }}</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        {% endif %}
+    </div>
+{% endblock %}

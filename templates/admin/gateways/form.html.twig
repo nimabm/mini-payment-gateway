@@ -1,0 +1,124 @@
+{% extends 'admin/layout.html.twig' %}
+{% set active = 'gateways' %}
+
+{% block title %}{{ gateway ? t('gateways.edit') : t('gateways.new') }}{% endblock %}
+{% block heading %}{{ gateway ? t('gateways.edit') : t('gateways.new') }}{% endblock %}
+
+{% block content %}
+    {% if sandboxForced %}
+        <div class="banner banner-warn">{{ t('gateways.force_sandbox_warning') }}</div>
+    {% endif %}
+
+    <form method="post" action="{{ gateway ? '/admin/gateways/' ~ gateway.id.value : '/admin/gateways' }}">
+        <input type="hidden" name="_token" value="{{ csrfToken }}">
+
+        <div class="grid grid-2">
+            <div class="card">
+                <h2>{{ t('gateways.title') }}</h2>
+
+                <div class="field">
+                    <label for="driver">{{ t('gateways.driver') }}</label>
+                    {% if gateway %}
+                        {# The driver decides the shape of the credentials, so
+                           changing it on an existing connection would orphan
+                           them. Create a new gateway instead. #}
+                        <input type="text" value="{{ driver.displayName }}" disabled>
+                    {% else %}
+                        <select id="driver" name="driver" onchange="location = '/admin/gateways/new?driver=' + this.value">
+                            {% for available in drivers %}
+                                <option value="{{ available.name.value }}"
+                                        {{ available.name.value == driver.name.value ? 'selected' }}>
+                                    {{ available.displayName }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    {% endif %}
+                </div>
+
+                <div class="field">
+                    <label for="label">{{ t('gateways.label') }}</label>
+                    <input type="text" id="label" name="label" required
+                           value="{{ gateway ? gateway.label : driver.displayName }}">
+                    <div class="hint">{{ t('gateways.label_hint') }}</div>
+                </div>
+
+                <div class="field">
+                    <label>{{ t('gateways.currencies') }}</label>
+                    {% for currency in currencies %}
+                        {% if driver.supports(currency) %}
+                            <div class="checkbox">
+                                <input type="checkbox" id="cur_{{ currency.value }}" name="currencies[]"
+                                       value="{{ currency.value }}"
+                                       {{ gateway and currency in gateway.currencies() ? 'checked' }}>
+                                <label for="cur_{{ currency.value }}" style="margin:0">{{ currency.value }}</label>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
+                <div class="field">
+                    <label for="priority">{{ t('gateways.priority') }}</label>
+                    <input type="number" id="priority" name="priority" dir="ltr"
+                           value="{{ gateway ? gateway.priority() : 100 }}">
+                    <div class="hint">{{ t('gateways.priority_hint') }}</div>
+                </div>
+
+                <div class="grid grid-2">
+                    <div class="field">
+                        <label for="min_amount">{{ t('gateways.min_amount') }}</label>
+                        <input type="number" id="min_amount" name="min_amount" dir="ltr"
+                               value="{{ gateway ? gateway.minAmount() : '' }}">
+                    </div>
+                    <div class="field">
+                        <label for="max_amount">{{ t('gateways.max_amount') }}</label>
+                        <input type="number" id="max_amount" name="max_amount" dir="ltr"
+                               value="{{ gateway ? gateway.maxAmount() : '' }}">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>{{ t('gateways.credentials') }}</h2>
+                <div class="hint" style="margin-bottom:12px">{{ t('gateways.credentials_hint') }}</div>
+
+                {% for field in fields %}
+                    <div class="field">
+                        <label for="cred_{{ field.key }}">{{ field.label }}</label>
+                        <input type="{{ field.secret ? 'password' : 'text' }}"
+                               id="cred_{{ field.key }}"
+                               name="credentials_{{ field.key }}"
+                               dir="ltr"
+                               autocomplete="off"
+                               placeholder="{{ gateway and gateway.credential(field.key) ? '••••••••' : '' }}">
+                        {% if field.hint %}<div class="hint">{{ field.hint }}</div>{% endif %}
+                    </div>
+                {% endfor %}
+
+                <hr style="border:none; border-top:1px solid var(--border); margin:18px 0">
+
+                {# The switch that decides whether real money can move. #}
+                <div class="field">
+                    <div class="checkbox">
+                        <input type="checkbox" id="sandbox" name="sandbox"
+                               {{ gateway is null or gateway.isSandbox() ? 'checked' }}>
+                        <label for="sandbox" style="margin:0">{{ t('gateways.sandbox') }}</label>
+                    </div>
+                    <div class="hint">{{ t('gateways.sandbox_hint') }}</div>
+                </div>
+
+                <div class="field">
+                    <div class="checkbox">
+                        <input type="checkbox" id="enabled" name="enabled"
+                               {{ gateway and gateway.isEnabled() ? 'checked' }}>
+                        <label for="enabled" style="margin:0">{{ t('gateways.enabled') }}</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <button type="submit" class="btn btn-primary">{{ t('common.save') }}</button>
+            <a class="btn" href="/admin/gateways">{{ t('common.cancel') }}</a>
+        </div>
+    </form>
+{% endblock %}

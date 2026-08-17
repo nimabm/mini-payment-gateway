@@ -1,0 +1,100 @@
+{% extends 'admin/layout.html.twig' %}
+{% set active = 'merchants' %}
+
+{% block title %}{{ merchant ? t('merchants.edit') : t('merchants.new') }}{% endblock %}
+{% block heading %}{{ merchant ? t('merchants.edit') : t('merchants.new') }}{% endblock %}
+
+{% block content %}
+    <form method="post"
+          action="{{ merchant ? '/admin/merchants/' ~ merchant.id.value : '/admin/merchants' }}">
+        <input type="hidden" name="_token" value="{{ csrfToken }}">
+
+        <div class="grid grid-2">
+            <div class="card">
+                <h2>{{ t('merchants.title') }}</h2>
+
+                <div class="field">
+                    <label for="name">{{ t('merchants.name') }}</label>
+                    <input type="text" id="name" name="name" required
+                           value="{{ merchant ? merchant.name : '' }}">
+                </div>
+
+                {% if not merchant %}
+                    <div class="field">
+                        <label for="slug">{{ t('merchants.slug') }}</label>
+                        <input type="text" id="slug" name="slug" dir="ltr" placeholder="my-shop">
+                        <div class="hint">{{ t('merchants.slug_hint') }}</div>
+                    </div>
+                {% endif %}
+
+                <div class="field">
+                    <label for="default_currency">{{ t('merchants.default_currency') }}</label>
+                    <select id="default_currency" name="default_currency">
+                        {% for currency in currencies %}
+                            <option value="{{ currency.value }}"
+                                    {{ merchant and merchant.defaultCurrency() == currency ? 'selected' }}>
+                                {{ currency.value }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="webhook_url">{{ t('merchants.webhook_url') }}</label>
+                    <input type="url" id="webhook_url" name="webhook_url" dir="ltr"
+                           value="{{ merchant ? merchant.webhookUrl() : '' }}">
+                    <div class="hint">{{ t('merchants.webhook_hint') }}</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>{{ t('merchants.gateways') }}</h2>
+                <div class="hint" style="margin-bottom:10px">{{ t('merchants.gateways_hint') }}</div>
+
+                {% for gateway in gateways %}
+                    <div class="checkbox" style="margin-bottom:8px">
+                        <input type="checkbox" id="gw_{{ gateway.id.value }}" name="gateways[]"
+                               value="{{ gateway.id.value }}"
+                               {{ gateway.id.value in assigned ? 'checked' }}>
+                        <label for="gw_{{ gateway.id.value }}" style="margin:0">
+                            {{ gateway.label }}
+                            {% if gateway.isSandbox() %}
+                                <span class="badge badge-sandbox">{{ t('gateways.sandbox_badge') }}</span>
+                            {% else %}
+                                <span class="badge badge-live">{{ t('gateways.live_badge') }}</span>
+                            {% endif %}
+                            {% if not gateway.isEnabled() %}
+                                <span class="badge badge-neutral">{{ t('gateways.disabled') }}</span>
+                            {% endif %}
+                        </label>
+                    </div>
+                {% else %}
+                    <div class="empty">{{ t('gateways.empty') }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="card">
+                <h2>{{ t('merchants.callback_hosts') }}</h2>
+                <div class="field">
+                    <textarea name="allowed_callback_hosts" dir="ltr"
+                              placeholder="shop.example.com&#10;.example.com">{{ merchant ? merchant.allowedCallbackHosts()|join("\n") : '' }}</textarea>
+                    <div class="hint">{{ t('merchants.callback_hosts_hint') }}</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>{{ t('merchants.ip_allowlist') }}</h2>
+                <div class="field">
+                    <textarea name="ip_allowlist" dir="ltr"
+                              placeholder="203.0.113.10">{{ merchant ? merchant.ipAllowlist()|join("\n") : '' }}</textarea>
+                    <div class="hint">{{ t('merchants.ip_allowlist_hint') }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <button type="submit" class="btn btn-primary">{{ t('common.save') }}</button>
+            <a class="btn" href="/admin/merchants">{{ t('common.cancel') }}</a>
+        </div>
+    </form>
+{% endblock %}

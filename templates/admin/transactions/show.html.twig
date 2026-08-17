@@ -1,0 +1,152 @@
+{% extends 'admin/layout.html.twig' %}
+{% set active = 'transactions' %}
+
+{% block title %}{{ t('transactions.detail') }}{% endblock %}
+{% block heading %}{{ t('transactions.detail') }} — {{ payment.orderId }}{% endblock %}
+
+{% block actions %}
+    <a class="btn btn-sm" href="/admin/transactions">{{ t('common.back') }}</a>
+{% endblock %}
+
+{% block content %}
+    <div class="grid grid-4" style="margin-bottom:18px">
+        <div class="stat">
+            <div class="stat-label">{{ t('common.status') }}</div>
+            <div class="stat-value" style="font-size:18px">
+                <span class="badge badge-{{ status_tone(payment.status()) }}">{{ status_label(payment.status()) }}</span>
+            </div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">{{ t('transactions.amount') }}</div>
+            <div class="stat-value">{{ payment.amount|money }}</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">{{ t('transactions.created_at') }}</div>
+            <div class="stat-value" style="font-size:16px">{{ payment.createdAt|datetime }}</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">{{ t('transactions.paid_at') }}</div>
+            <div class="stat-value" style="font-size:16px">{{ payment.paidAt()|datetime }}</div>
+        </div>
+    </div>
+
+    <div class="grid grid-2">
+        <div class="card">
+            <h2>{{ t('transactions.detail') }}</h2>
+            <div class="table-wrap">
+                <table>
+                    <tbody>
+                    <tr><th>ID</th><td class="mono">{{ payment.id.value }}</td></tr>
+                    <tr><th>{{ t('transactions.order_id') }}</th><td>{{ payment.orderId }}</td></tr>
+                    <tr>
+                        <th>{{ t('transactions.merchant') }}</th>
+                        <td>{{ merchant ? merchant.name : '—' }}</td>
+                    </tr>
+                    <tr><th class="wrap">{{ t('transactions.callback_url') }}</th><td class="mono wrap">{{ payment.callbackUrl }}</td></tr>
+                    <tr><th>{{ t('transactions.payer') }}</th>
+                        <td class="wrap">
+                            {{ payment.payer.name ?: '—' }}
+                            {% if payment.payer.email %}<div class="muted mono">{{ payment.payer.email }}</div>{% endif %}
+                            {% if payment.payer.mobile %}<div class="muted mono">{{ payment.payer.mobile }}</div>{% endif %}
+                        </td>
+                    </tr>
+                    {% if payment.description %}
+                        <tr><th>{{ t('transactions.description') }}</th><td class="wrap">{{ payment.description }}</td></tr>
+                    {% endif %}
+                    {% if payment.failureReason() %}
+                        <tr><th>{{ t('transactions.failure') }}</th><td class="wrap">{{ payment.failureReason() }}</td></tr>
+                    {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>{{ t('transactions.actions') }}</h2>
+
+            {# Manual verification is the button for "the customer says they
+               paid but the order is not marked". It is safe to press twice. #}
+            <form method="post" action="/admin/transactions/{{ payment.id.value }}/verify" class="stack">
+                <input type="hidden" name="_token" value="{{ csrfToken }}">
+                <button type="submit" class="btn btn-primary">{{ t('transactions.inquire') }}</button>
+                <p class="muted" style="margin:0">{{ t('transactions.verify_now') }}</p>
+            </form>
+
+            {% if webhooks is not empty %}
+                <h2 style="margin-top:20px">{{ t('webhooks.title') }}</h2>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>{{ t('webhooks.event') }}</th>
+                            <th>{{ t('common.status') }}</th>
+                            <th class="right">{{ t('webhooks.attempts') }}</th>
+                            <th>{{ t('webhooks.last_response') }}</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for delivery in webhooks %}
+                            <tr>
+                                <td class="mono">{{ delivery.event }}</td>
+                                <td>{{ webhook_status_label(delivery.status()) }}</td>
+                                <td class="right numeric">{{ delivery.attempts()|digits }}</td>
+                                <td class="mono">{{ delivery.lastResponseCode() ?: '—' }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>{{ t('transactions.timeline') }}</h2>
+
+        {% for attempt in payment.attempts() %}
+            {% set gateway = gateways[attempt.gatewayId.value]|default(null) %}
+            <div class="card" style="background:var(--surface-2)">
+                <div class="spread">
+                    <div>
+                        <strong>#{{ attempt.sequence|digits }}</strong>
+                        —
+                        {{ gateway ? gateway.label : attempt.gatewayId.value }}
+                        {% if gateway and gateway.isSandbox() %}
+                            <span class="badge badge-sandbox">{{ t('gateways.sandbox_badge') }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="muted">{{ attempt.createdAt|datetime }}</div>
+                </div>
+
+                <div class="table-wrap" style="margin-top:10px">
+                    <table>
+                        <tbody>
+                        <tr><th>{{ t('common.status') }}</th><td>{{ attempt.status().value }}</td></tr>
+                        <tr><th>{{ t('transactions.reference') }}</th><td class="mono">{{ attempt.reference() ?: '—' }}</td></tr>
+                        <tr><th>{{ t('transactions.transaction_id') }}</th><td class="mono">{{ attempt.transactionId() ?: '—' }}</td></tr>
+                        <tr><th>{{ t('transactions.card') }}</th><td class="mono">{{ attempt.cardPan() ?: '—' }}</td></tr>
+                        {% if attempt.failureCode() %}
+                            <tr>
+                                <th>{{ t('transactions.failure') }}</th>
+                                <td class="wrap"><span class="mono">{{ attempt.failureCode() }}</span> — {{ attempt.failureMessage() }}</td>
+                            </tr>
+                        {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {# The exact bytes exchanged with the bank. When a PSP disputes
+                   what happened, this is the evidence. #}
+                <details style="margin-top:10px">
+                    <summary class="muted">{{ t('transactions.raw_request') }} / {{ t('transactions.raw_response') }}</summary>
+                    <div class="grid grid-2" style="margin-top:10px">
+                        <pre class="payload">{{ attempt.requestPayload()|pretty_json }}</pre>
+                        <pre class="payload">{{ attempt.responsePayload()|pretty_json }}</pre>
+                    </div>
+                </details>
+            </div>
+        {% else %}
+            <div class="empty">{{ t('dashboard.no_data') }}</div>
+        {% endfor %}
+    </div>
+{% endblock %}
