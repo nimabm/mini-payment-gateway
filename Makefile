@@ -11,7 +11,8 @@ help: ## Show this help
 up: .env ## Start everything (builds on first run, migrates and seeds itself)
 	$(COMPOSE) up -d --build
 	@echo ""
-	@echo "  Panel -> http://localhost:$${HTTP_PORT:-8080}/admin"
+	@echo "  Reach the panel at /admin on the host your reverse proxy serves."
+	@echo "  Running without a proxy? Uncomment the ports in docker-compose.yml."
 	@echo "  Sign-in details are in the logs on first run: make logs"
 
 .PHONY: down
@@ -47,6 +48,7 @@ key: ## Print a fresh APP_KEY
 .PHONY: reset
 reset: ## Stop and delete the database. Destroys every payment.
 	$(COMPOSE) down -v
+	rm -rf ./gateway-data
 
 # Creating .env is a prerequisite of `up`, so a first run needs no separate
 # step: the key is generated once and then left alone forever, because it is

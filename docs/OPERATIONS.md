@@ -64,8 +64,29 @@ One image, two containers:
 | `app` | Apache with mod_php. Migrates and seeds on boot. |
 | `worker` | Webhook retries, reconciliation, expiry, pruning. |
 
-One volume, `gateway-data`, holding the SQLite file. Logs go to stdout and
+The database is bind-mounted to `./gateway-data` on the host, so the SQLite
+file is an ordinary file you can copy off the server. Logs go to stdout and
 stderr, so `docker compose logs` is all there is to it.
+
+### Networks
+
+| Network | Who is on it | Why |
+|---|---|---|
+| `backend` | `app`, `worker` | Internal traffic. Created by Compose. |
+| `proxy` (external, `nginx_proxy`) | `app` only | How the reverse proxy reaches the panel and the callback endpoints. |
+
+Nothing is published to the host: point Nginx Proxy Manager at
+**`mini-payment-gateway-app`** on **port 80**. The worker is deliberately kept
+off `proxy` — it serves no HTTP, so nothing should be able to route to it.
+
+The `nginx_proxy` network has to exist before the first start. If Nginx Proxy
+Manager has not created it yet:
+
+```bash
+docker network create nginx_proxy
+```
+
+To run without a proxy, uncomment the `ports` block in `docker-compose.yml`.
 
 Upgrading is `make up` again: it rebuilds the image and the entrypoint applies
 any new migrations before Apache starts.
@@ -101,15 +122,17 @@ Without a long-running container, run the same work from cron:
 
 ## Backups
 
-Everything lives in one SQLite file. Back it up **with SQLite**, not `cp` — the
-WAL means a plain copy can be inconsistent.
+Everything lives in one SQLite file, at `./gateway-data/gateway.sqlite`. Back it
+up **with SQLite**, not `cp` — the WAL means a plain copy of a live database can
+be inconsistent.
 
 ```bash
 docker compose exec -T app \
     sqlite3 /var/lib/gateway/gateway.sqlite ".backup '/var/lib/gateway/backup.sqlite'"
-
-docker compose cp app:/var/lib/gateway/backup.sqlite ./backup-$(date +%F).sqlite
 ```
+
+The result lands in `./gateway-data/backup.sqlite` on the host, ready for rsync
+or whatever takes your backups off the machine.
 
 Back up `APP_KEY` separately, and not next to the database. The database without
 the key is useless; that is the point.
@@ -118,9 +141,13 @@ the key is useless; that is the point.
 
 ```bash
 docker compose down
-docker compose cp ./backup-2024-08-16.sqlite app:/var/lib/gateway/gateway.sqlite
+cp ./backup-2026-08-16.sqlite ./gateway-data/gateway.sqlite
+rm -f ./gateway-data/gateway.sqlite-wal ./gateway-data/gateway.sqlite-shm
 docker compose up -d
 ```
+
+Delete the `-wal` and `-shm` siblings with it: left behind, they belong to the
+database you just replaced.
 
 **Restoring a production backup into staging is the dangerous case** — it brings
 live PSP credentials with it. Turn on **Settings → Force every gateway into
