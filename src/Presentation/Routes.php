@@ -128,11 +128,27 @@ final class Routes
             return $response->withHeader('Content-Type', 'application/json');
         });
 
+        // The root is a blank page, on purpose.
+        //
+        // Nobody who belongs here arrives at `/`: merchants call /api/v1,
+        // payers are sent to /pay/{id}, and operators bookmark /admin. Whoever
+        // is left is a stranger or a scanner, and forwarding them to the admin
+        // sign-in form only tells them where the door is. So this answers with
+        // nothing at all — no branding, no redirect, no hint that an admin
+        // panel exists. A 404 would be the other honest answer; a blank 200 is
+        // quieter still, because it does not distinguish this host from any
+        // other parked domain.
         $app->get('/', function (
             ServerRequestInterface $request,
             ResponseInterface $response,
         ): ResponseInterface {
-            return $response->withStatus(302)->withHeader('Location', '/admin');
+            $response->getBody()->write(
+                "<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\">"
+                . "<meta name=\"robots\" content=\"noindex, nofollow\">"
+                . "<title></title></head><body></body></html>\n",
+            );
+
+            return $response->withHeader('Content-Type', 'text/html; charset=utf-8');
         });
     }
 }
