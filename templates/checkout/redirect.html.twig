@@ -1,0 +1,51 @@
+{# The hop from this site to the bank's payment page.
+
+   This is deliberately a page and not a 302. ZarinPal matches the HTTP
+   `Referer` of the request that lands on StartPay against the domain
+   registered for the gateway, and shows the payer a "you are leaving an
+   unknown site" interstitial when it does not match. A 302 sends no `Referer`
+   of its own — the browser forwards whatever referrer the request to /pay/{id}
+   carried, which for a link opened from an email, an app or a chat is nothing
+   at all. A navigation started by script on this page does send one, and it is
+   this domain.
+
+   So the redirect has to happen in the browser, from a document served by us.
+   Please do not turn it back into a 302.
+
+   Everything here is inline and the navigation is started from <head>, before
+   the body is parsed: it costs one small document and no extra requests, and
+   the payer never sees the markup below. It exists for the seconds before the
+   bank answers, and for browsers with scripting turned off. #}
+<!DOCTYPE html>
+<html lang="{{ locale.value }}" dir="{{ direction }}">
+<head>
+<meta charset="utf-8">
+{# Sent before the navigation is started so it applies to it. `origin` gives
+   ZarinPal the scheme and host it needs to match and nothing else — never the
+   payment id in our path. The browser default would do the same, but this page
+   cannot afford to inherit a stricter policy set somewhere upstream. #}
+<meta name="referrer" content="origin">
+<script>window.location.replace("{{ redirectUrl|e('js') }}");</script>
+<noscript><meta http-equiv="refresh" content="0; url={{ redirectUrl }}"></noscript>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>{{ t('checkout.redirecting_title') }}</title>
+<link rel="icon" href="data:,">
+<style>
+    body { margin: 0; display: flex; min-height: 100vh; align-items: center; justify-content: center;
+           font-family: system-ui, sans-serif; background: #f5f6f8; color: #1f2430; }
+    .bounce { max-width: 24rem; padding: 2rem; text-align: center; }
+    .bounce p { margin: 0 0 1.5rem; line-height: 1.8; }
+    .bounce a { display: inline-block; padding: .6rem 1.4rem; border-radius: .4rem;
+                background: #1f2430; color: #fff; text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="bounce">
+    <p>{{ t('checkout.redirecting_body') }}</p>
+    {# Also the manual escape hatch when the script above is blocked: a click on
+       a same-document link carries the referrer just as the script does. #}
+    <a href="{{ redirectUrl }}">{{ t('checkout.redirecting_manual') }}</a>
+</div>
+</body>
+</html>

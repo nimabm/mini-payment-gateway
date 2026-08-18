@@ -138,9 +138,15 @@ abandoned carts from filling your bank's dashboard with dead transactions.
 
 The cost of that choice is paid at `/pay/{id}`: the payer waits on one
 synchronous call to the PSP — around 1.6 s against ZarinPal's sandbox, against
-about 8 ms of application overhead. Nothing is rendered during or after it. The
-handler answers with a `302` straight to the bank, so the browser never paints
-a page in between.
+about 8 ms of application overhead.
+
+The handler then answers with a small self-redirecting document rather than a
+`302`. ZarinPal matches the `Referer` of the request arriving at StartPay
+against the domain registered for the gateway and warns the payer when it does
+not match; a `302` sends no `Referer`, so only a navigation started by the
+browser from a document on this domain satisfies it. The document carries its
+markup, styles and script inline and starts the navigation from `<head>`, so
+the extra cost is one request-free parse and the payer does not see it.
 
 ---
 

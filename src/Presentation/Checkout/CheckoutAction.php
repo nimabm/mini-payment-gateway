@@ -20,9 +20,9 @@ use Slim\Psr7\Response;
  * The page the payer lands on. It picks a gateway, opens the transaction and
  * forwards to the bank.
  *
- * The success path is a bare 302 — see the redirect below for why. The failure
- * paths render real pages, because a payer whose payment could not be started
- * needs to be told something.
+ * The forward is a rendered page rather than a 302 — see the success path
+ * below for why. The failure paths render real pages too, because a payer
+ * whose payment could not be started needs to be told something.
  */
 final readonly class CheckoutAction
 {
@@ -63,21 +63,27 @@ final readonly class CheckoutAction
             );
         }
 
-        // A plain 302, not an interstitial page.
+        // A page that redirects itself, not a 302.
         //
-        // The payer is already waiting on the round trip to the bank, which is
-        // where every measurable millisecond of this request goes. Rendering a
-        // "taking you to your bank" page on top of that adds a document parse
-        // and a render-blocking stylesheet request to the critical path, and
-        // shows a flash of a page nobody wants to look at. The browser follows
-        // this before it paints anything.
+        // ZarinPal matches the `Referer` of the request arriving at StartPay
+        // against the domain registered for the gateway, and warns the payer
+        // about an unknown origin when it does not match. A 302 carries no
+        // `Referer` of its own, so the payer gets that warning between us and
+        // the card form. Only a navigation started in the browser, from a
+        // document on this domain, sends the header ZarinPal wants to see.
         //
-        // The failure paths above still render real pages, because those are
-        // the ones a payer actually needs to read.
-        return (new Response(302))
-            ->withHeader('Location', $result->redirectUrl)
-            // The bank's URL carries a single-use reference; caching this
-            // redirect would send a later payer to a dead transaction.
+        // The template starts that navigation from <head> with everything
+        // inline, so the cost over the 302 is one small document and no extra
+        // requests. See templates/checkout/redirect.html.twig.
+        $response = $this->renderer->render(
+            new Response(200),
+            'checkout/redirect.html.twig',
+            ['redirectUrl' => $result->redirectUrl],
+        );
+
+        // The bank's URL carries a single-use reference; caching this page
+        // would send a later payer to a dead transaction.
+        return $response
             ->withHeader('Cache-Control', 'no-store, no-cache, must-revalidate')
             ->withHeader('Pragma', 'no-cache');
     }
